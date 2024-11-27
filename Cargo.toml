@@ -1,0 +1,13 @@
+[package]
+name = "rusty-rt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+softbuffer = "0.4.6"
+winit = { version = "0.30.5", features = ["rwh_06"] }
+log = "0.4.22"
+rayon = "1.10.0"
+anyhow = "1.0.93"
+nalgebra = "0.33.2"
+clap = { version = "4.5.21", features = ["derive"] }
