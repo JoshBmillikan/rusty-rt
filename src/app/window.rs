@@ -19,7 +19,7 @@ pub fn create_window(
     let resolution = winit::dpi::Size::Physical(PhysicalSize::new(window_width, window_height));
 
     let attributes = WindowAttributes::default()
-        .with_resizable(true)
+        .with_resizable(false)
         .with_title(env!("CARGO_PKG_NAME"))
         .with_position(center_position(
             screen_size,

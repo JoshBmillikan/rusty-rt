@@ -56,13 +56,22 @@ struct Ray {
 
 impl Ray {
     fn color(&self, sphere: &Sphere) -> nalgebra::Vector3<f32> {
-        if sphere.hit(self) {
-            nalgebra::Vector3::new(1., 0., 0.)
+        let t = sphere.hit(self);
+        if t > 0. {
+            let n = nalgebra::UnitVector3::new_normalize(
+                self.at(t).coords - nalgebra::Vector3::new(0., 0., -1.),
+            );
+            0.5 * nalgebra::Vector3::new(n.x + 1., n.y + 1., n.z + 1.)
         } else {
             let direction = self.direction.normalize();
             let a = (direction.y + 1.) * 0.5;
             nalgebra::Vector3::new(1., 1., 1.).lerp(&nalgebra::Vector3::new(0.5, 0.7, 1.), a)
         }
+    }
+
+    fn at(&self, t: f32) -> nalgebra::Point3<f32> {
+        let dir: nalgebra::Vector3<f32> = self.direction.xyz();
+        (self.origin.coords + t * dir).into()
     }
 }
 
@@ -72,12 +81,16 @@ struct Sphere {
 }
 
 impl Sphere {
-    fn hit(&self, ray: &Ray) -> bool {
+    fn hit(&self, ray: &Ray) -> f32 {
         let oc = self.center - ray.origin;
         let a = ray.direction.dot(&ray.direction);
         let b = -2. * ray.direction.dot(&oc);
         let c = oc.dot(&oc) - self.radius.powi(2);
         let discriminant = b.powi(2) - 4. * a * c;
-        discriminant >= 0.
+        if discriminant < 0. {
+            -1.
+        } else {
+            (-b - discriminant.sqrt()) / (2.0 * a)
+        }
     }
 }
