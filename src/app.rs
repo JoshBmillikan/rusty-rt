@@ -1,8 +1,9 @@
 use crate::app::raytracer::Raytracer;
+use crate::app::window::create_window;
 use clap::Parser;
 use softbuffer::{Context, Surface};
 use std::cell::{LazyCell, OnceCell};
-use std::num::{NonZero, NonZeroUsize};
+use std::num::{NonZero, NonZeroU32, NonZeroUsize};
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
@@ -10,6 +11,7 @@ use winit::event_loop::ActiveEventLoop;
 use winit::window::{Window, WindowId};
 
 mod raytracer;
+mod window;
 
 pub struct App {
     raytracer: Raytracer,
@@ -42,7 +44,11 @@ impl App {
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        todo!()
+        if self.window.is_none() {
+            self.window = Some(Arc::new(
+                create_window(self.width, self.height, event_loop).unwrap(),
+            ));
+        }
     }
 
     fn window_event(
@@ -59,6 +65,7 @@ impl ApplicationHandler for App {
             }
             WindowEvent::RedrawRequested => {
                 if let Some(window) = self.window.as_ref() {
+                    println!("tracing");
                     let context = self.context.get_or_init(|| {
                         Context::new(window.clone())
                             .expect("Failed to create window buffer context")
@@ -67,9 +74,21 @@ impl ApplicationHandler for App {
                         Surface::new(context, window.clone())
                             .expect("Failed to create window surface")
                     });
+                    let (width, height) = {
+                        let size = window.inner_size();
+                        (size.width, size.height)
+                    };
                     let surface = self.surface.get_mut().unwrap();
+                    surface
+                        .resize(
+                            NonZeroU32::new(width).unwrap(),
+                            NonZeroU32::new(height).unwrap(),
+                        )
+                        .unwrap();
                     let mut data = surface.buffer_mut().expect("Failed to get surface buffer");
                     self.raytracer.raytrace(&mut data);
+                    data.present().unwrap();
+                    println!("raytracing finished");
                 }
             }
             _ => {}
@@ -83,9 +102,9 @@ struct Args {
     #[clap(short, long, default_value_t = std::thread::available_parallelism().unwrap_or(NonZero::new(1usize).unwrap())
     )]
     thread_count: NonZeroUsize,
-    #[clap(short, long, default_value = "1920")]
+    #[clap(long, default_value = "1920")]
     width: u32,
-    #[clap(short, long, default_value = "1080")]
+    #[clap(long, default_value = "1080")]
     height: u32,
     #[clap(short, long, default_value = "4")]
     bounces: u32,
